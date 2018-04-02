@@ -1,0 +1,40 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE log4j:configuration SYSTEM "log4j.dtd">
+<log4j:configuration xmlns:log4j="http://jakarta.apache.org/log4j/">
+
+  <appender name="RollingFileAppender" class="org.apache.log4j.RollingFileAppender">
+        <param name="file" value="/opt/logs/wirels-sms-gateway/wirels-sms-gateway.log" />
+        <param name="MaxFileSize" value="5MB"/>
+        <param name="append" value="true" />
+        <param name="encoding" value="UTF-8" />
+     	<layout class="org.apache.log4j.PatternLayout">
+        	<param name="ConversionPattern" value="%5p %d{ISO8601} [%t][%x] %c - %m%n" />
+        </layout>
+  </appender>
+
+  <category name="wirels.sms.gateway" additivity="false">
+        <priority value="debug" />
+        <appender-ref ref="RollingFileAppender" />
+  </category>
+  
+   <appender name="CamelRollingFileAppender" class="org.apache.log4j.RollingFileAppender">
+        <param name="file" value="/opt/logs/wirels-sms-gateway/camel-smpp.log" />
+        <param name="MaxFileSize" value="5MB"/>
+        <param name="append" value="true" />
+        <param name="encoding" value="UTF-8" />
+     	<layout class="org.apache.log4j.PatternLayout">
+        	<param name="ConversionPattern" value="%5p %d{ISO8601} [%t][%x] %c - %m%n" />
+        </layout>
+  </appender>
+
+  <category name="org.apache.camel" additivity="false">
+        <priority value="debug" />
+        <appender-ref ref="CamelRollingFileAppender" />
+  </category>
+  
+  <category name="org.jsmpp" additivity="false">
+        <priority value="debug" />
+        <appender-ref ref="CamelRollingFileAppender" />
+  </category>
+
+</log4j:configuration>

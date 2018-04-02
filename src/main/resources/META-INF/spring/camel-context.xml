@@ -1,0 +1,71 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<beans xmlns="http://www.springframework.org/schema/beans"
+       xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+       xmlns:context="http://www.springframework.org/schema/context"
+       xmlns:camel="http://camel.apache.org/schema/spring"
+       xsi:schemaLocation="
+       http://www.springframework.org/schema/beans http://www.springframework.org/schema/beans/spring-beans.xsd
+       http://camel.apache.org/schema/spring http://camel.apache.org/schema/spring/camel-spring.xsd
+       http://www.springframework.org/schema/context
+       http://www.springframework.org/schema/context/spring-context-3.0.xsd">
+
+
+  <bean id="submitSMProcessor" class="wirels.sms.gateway.processors.SubmitSMProcessor">
+  </bean>
+
+  <bean id="receiveSMProcessor" class="wirels.sms.gateway.processors.ReceiveSMProcessor">
+      <property name="dlrDeliveryReportDAO"  ref="dlrDeliveryReportDAO" />
+      <property name="moMessageOutDAO"  ref="moMessageOutDAO" />
+  </bean>
+  
+  <bean id="smppProducerHandler" class="wirels.sms.gateway.service.SMPPProducerHandler">
+  </bean>
+
+  <bean id="smsRetriever" class="wirels.gateway.service.SMSRetriever">
+      <property name="moMessageOutDAO"  ref="moMessageOutDAO" />
+  </bean>
+  
+  <bean id="moMessageOutDAO" class="wirels.sms.gateway.dao.MoMessageOutDAO">
+      <property name="dataSource"  ref="dataSource" />
+  </bean>
+  
+  <bean id="dlrDeliveryReportDAO" class="wirels.sms.gateway.dao.DlrDeliveryReportDAO">
+      <property name="dataSource"  ref="dataSource" />
+  </bean>
+
+   <!-- Initialization for data source -->
+   <bean id="dataSource" class="org.springframework.jdbc.datasource.DriverManagerDataSource">
+      <property name="driverClassName" value="com.mysql.jdbc.Driver"/>
+      <property name="url" value="jdbc:mysql://127.0.0.1:3306/service_manager"/>
+      <property name="username" value="root"/>
+      <property name="password" value="w1r3l5"/>
+   </bean>
+  
+  <camel:camelContext id="camel-1" xmlns="http://camel.apache.org/schema/spring">
+
+   <route id="SMPPConnectionRoute1">
+      <description>A route which sets up the SMPP connection to Airgate 1 to send the SMS.</description>
+      <from uri="direct:sendSM1"/>
+      <to uri="smpp://airadv@10.0.25.200:1060?password=air222&amp;enquireLinkTimer=60000&amp;transactionTimer=5000&amp;systemType=producer&amp;serviceType=&amp;sourceAddr=C-Advance&amp;sourceAddrTon=0&amp;sourceAddrNpi=1"/>
+      <process ref="submitSMProcessor"/>
+   </route>
+   
+   <route id="RetrieveSendSMRoute">
+      <description>A route which sends a SMS every n seconds.</description>
+      <from uri="timer:retrieveRecordsTimer?delay=3s?&amp;fixedRate=true?&amp;period=1s"/>
+      <to uri="bean:smsRetriever?method=retrieveSMSRecords"/>
+   </route>
+
+  </camel:camelContext> 
+
+  <camel:camelContext id="camel-2" xmlns="http://camel.apache.org/schema/spring">
+
+   <route id="SMPPConnectionRoute2">
+      <description>A route which sets up the SMPP connection to receive an SMS from Airgate1.</description>
+      <from uri="smpp://airadv@10.0.25.200:1060?password=air222&amp;enquireLinkTimer=60000&amp;transactionTimer=5000&amp;systemType=consumer&amp;serviceType="/>
+      <process ref="receiveSMProcessor"/>
+   </route>
+
+  </camel:camelContext>
+  
+</beans>
